@@ -49,31 +49,47 @@ def mapLocation(lat,lng):
 #            x -= diff
         return str(x-diff)
     return ':'.join([convert(lng),convert(lat)])
+ 
+def loadStopWords(path):
+    with open(path,'r') as file:
+        return {i.replace('\n','').strip():1 for i in list(file)}
     
-    
-wordLocDict = {}    
+wordLocDict = {} 
+mappingList = wordLocDict.items()
+stopWords = loadStopWords('stopwords.csv')
+
 def wordsForChiFeatures(text,loc):
     notAlphaNumeric = u'[^a-z0-9]'
     for i in text.split(' '):
-        i= i.lower()
+        i= i.encode('ascii','xmlcharrefreplace').lower()
         if len(i)>3 :
-            if not re.search(notAlphaNumeric,i):
+            if not re.search(notAlphaNumeric,i) and i not in stopWords:
                 wordLocDict[(i,loc)] = wordLocDict.get((i,loc),0) + 1
                 
-
-#loadfiles('C:\Users\AravindKumarReddy\Downloads\SMMProject2')
-def main():
-    tweetdata = loadfiles('C:\Users\AravindKumarReddy\Downloads\SMMSample')
+                
+def assignFeature(text, location,feature,N):    
+    if feature in text.split(' '):
+        owc = wordLocDict.get((feature,location)) 
+        ownotc = sum( j for i,j in wordLocDict.items() if i[0]==feature and i[1]!=location)
+        onotwc = sum( j for i,j in wordLocDict.items() if i[0]!=feature and i[1]==location)
+        return (owc+ownotc)*(owc*onotwc)*(1/float(N)) 
+    else:
+        return 0
+                
+def main(path):
+    tweetdata = loadfiles(path)
     #tweetdata['location'] = map(reverseGeocode, tweetdata['lat'],tweetdata['lng'])
     tweetdata['location'] = map(mapLocation, tweetdata['lat'],tweetdata['lng'])    
-
-    map(wordsForChiFeatures,tweetdata['text'], tweetdata['location'])
-    
-    
-    print { i:j for i,j in wordLocDict.items() if j>1 }
-    
+    map(wordsForChiFeatures,tweetdata['text'], tweetdata['location'])    
+    totalCount = sum(j for j in wordLocDict.values() if j>1)
+    for i,j in wordLocDict.items():
+        # change 1 to any value as per requirement
+        if j>1 :
+            tweetdata[str(i)] = map(lambda x,y:assignFeature(x,y,i[0],totalCount),tweetdata['text'],tweetdata['location'])
+    tweetdata.to_csv('liw.csv',header=True, index=False,encoding='utf-8')
 if __name__ == '__main__':
-    main()
+    #main('C:\Users\AravindKumarReddy\Downloads\SMMProject2')
+    main('C:\Users\AravindKumarReddy\Downloads\SMMSample')
                 
                 
     
