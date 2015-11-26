@@ -17,6 +17,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.cross_validation import train_test_split
+from sklearn.cluster import KMeans
 
 def loadfiles(path):
     directories = [path]
@@ -32,8 +33,12 @@ def loadfiles(path):
                     #files.append(current)
                     with open(current,'r') as f:
                         for line in f:
-                            js = json.loads(line)
-                            tweetdata.append([js['text'],js['location']['lat'],js['location']['lng']])                            
+                            try:
+                                js = json.loads(line)
+                                tweetdata.append([js['text'],js['location']['lat'],js['location']['lng']])  
+                            except:
+                                print 'Corrupt json:', current
+                                pass
             else:
                 directories.append(current)
     #return  pd.DataFrame(tweetdata,columns=['text','lat','lng'])
@@ -51,11 +56,11 @@ def mapLocation(lat,lng):
     def convert(x):
         x = int(x)
         diff = abs(x%10)
-        if  diff > 5:
-            x += 10 - diff  
-        else:
-            x -= diff
-        return str(x)
+#        if  diff > 5:
+#            x += 10 - diff  
+#        else:
+#            x -= diff
+        return str(x-diff)
     return ':'.join([convert(lng),convert(lat)])
  
 def loadStopWords(path):
@@ -84,7 +89,8 @@ def assignFeature(text, location,feature,N):
         return 0
                 
 def main(path):
-    tweetdata = loadfiles(path)
+    tweetdata = loadfiles(path)[0:200000]
+    #tweetdata = pd.read_csv(path,header=0).as_matrix()[0:200000]
     
     traindata, testdata = train_test_split(tweetdata,test_size=0.3, random_state=50)
     
@@ -118,20 +124,29 @@ def main(path):
     train_tfids = norm.fit_transform(train_tfids)
     test_tfids = norm.fit_transform(test_tfids)
     
-    ch2 = SelectKBest(chi2, k=1000)
+    km = KMeans(n_clusters=2000, init='k-means++', max_iter=100, n_init=1)
+    km.fit(traindata[[1,2]])
+    
+    ch2 = SelectKBest(chi2, k='all')
     y = traindata['location']
     train = ch2.fit_transform(train_tfids,y)
     test = ch2.transform(test_tfids)
     
+
+    
     #rf = RandomForestClassifier(n_estimators=100)
     #rf.fit(train.toarray(),y)
     
-    nb = MultinomialNB(alpha=.01)
-    nb.fit(train,y)
+    nb = MultinomialNB(alpha=.1)
+    nb.fit(train_tfids,y)
 
-    predictions = nb.predict(test)
+    predictions = nb.predict(test_tfids)
+    
+    #test labels
+    #km.fit(testdata[[1,2]])
     
     print accuracy_score(testdata['location'],predictions)
+    #print accuracy_score(km.labels_,predictions)
     
     #pd.DataFrame( confusion_matrix(testdata['location'],predictions)).to_csv('confusion_mat.csv')
     
@@ -141,8 +156,9 @@ def main(path):
     
     
 if __name__ == '__main__':
-    #main('C:\Users\AravindKumarReddy\Downloads\SMMProject2')
-    main('C:\Users\AravindKumarReddy\Downloads\SMMSample')
+    main('C:\Users\AravindKumarReddy\Downloads\SMMProject2')
+    #main('C:\Users\AravindKumarReddy\Downloads\SMMSample')
+    #main('C:\Users\AravindKumarReddy\Downloads\SMMSample\\freqwords_in_imp_tweets.csv')
     
                 
                 
