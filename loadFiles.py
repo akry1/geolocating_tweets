@@ -169,9 +169,15 @@ def main(path):
     
     
 if __name__ == '__main__':
-    #main('C:\Users\AravindKumarReddy\Downloads\SMMProject2')
-    #main('C:\Users\AravindKumarReddy\Downloads\SMMSample')
-    loadfiles('C:\Users\AravindKumarReddy\Downloads\SMMProject2')
+	try:
+		if(len(sys.argv) != 2):
+			print 'Usage \'P1-a.py folderpath\''
+			sys.exit(-1)
+		else:
+			loadfiles(sys.argv[1])
+	except:
+		print ''
+    
     
                 
                 
