@@ -1,5 +1,5 @@
 # geolocating_tweets
-SMM phase 2 project 
+This project was done as part of Social Media Mining course taken at ASU. The project is about predicting the user location based on the tweet posted by him. Please see the 'Tweet Based Geolocation.pdf' file for project details. 
 
 
 <h3>Pre Processing</h3>  
